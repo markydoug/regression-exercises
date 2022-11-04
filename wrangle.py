@@ -26,8 +26,7 @@ def new_zillow_data():
     sql_query = '''
                 SELECT bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, taxamount, fips
                 FROM properties_2017
-                JOIN propertylandusetype USING (propertylandusetypeid)
-                WHERE propertylandusedesc LIKE "Single Family Residential";
+                WHERE propertylandusetypeid = 261;
                 '''
     
     # Read in DataFrame from Codeup db.
@@ -50,4 +49,21 @@ def aquire_zillow_data(new = False):
     else:
         df = pd.read_csv(filename)
           
+    return df
+
+def wrangle_zillow(new = False):
+    if new == True:
+        df = aquire_zillow_data(new == True)
+    else:
+        df = aquire_zillow_data()
+        
+    #make column names more human readable
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
+                          'bathroomcnt':'bathrooms', 
+                          'calculatedfinishedsquarefeet':'square_feet',
+                          'taxvaluedollarcnt':'tax_value', 
+                          'yearbuilt':'year_built'})
+    
+    df = zillow.dropna()
+    
     return df
