@@ -54,6 +54,26 @@ def aquire_zillow_data(new = False):
           
     return df
 
+def remove_outliers(df, col_list):
+    ''' remove outliers from a list of columns in a dataframe 
+        and return that dataframe
+    '''
+    for col in col_list:
+
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)  # get quartiles
+        
+        iqr = q3 - q1   # calculate interquartile range
+        
+        upper_bound = q3 + 1.5 * iqr   # get upper bound
+        lower_bound = q1 - 1.5 * iqr   # get lower bound
+
+        # return dataframe without outliers
+        
+        df = df[(df[col] > lower_bound) & (df[col] < upper_bound)]
+        
+    return df
+
 def wrangle_zillow(new = False):
     ''' 
     Checks to see if there is a local copy of the data, 
@@ -74,6 +94,9 @@ def wrangle_zillow(new = False):
                           'taxvaluedollarcnt':'tax_value', 
                           'yearbuilt':'year_built'})
     
-    df = zillow.dropna()
+    df = remove_outliers(df, ['bedrooms','bathrooms','square_feet', 
+                                   'tax_value', 'taxamount'])
+    
+    df = df.dropna()
     
     return df
