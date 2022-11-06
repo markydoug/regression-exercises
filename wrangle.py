@@ -20,7 +20,7 @@ def get_db_url(db, user=env.username, password=env.password, host=env.host):
 
 def new_zillow_data():
     '''
-    This function reads the telco data from the Codeup db into a df.
+    This reads the zillow 2017 properties data from the Codeup db into a df.
     '''
     # Create SQL query.
     sql_query = '''
@@ -35,7 +35,10 @@ def new_zillow_data():
     return df
 
 def aquire_zillow_data(new = False):
-    ''' Aquires data for project'''
+    ''' 
+    Checks to see if there is a local copy of the data, 
+    if not or if new = True then go get data from Codeup database
+    '''
     
     filename = 'zillow.csv'
     
@@ -52,6 +55,13 @@ def aquire_zillow_data(new = False):
     return df
 
 def wrangle_zillow(new = False):
+    ''' 
+    Checks to see if there is a local copy of the data, 
+    if not or if new = True then go get data from Codeup database
+    Then prepares the data by making feature names human readable
+    and drop the nulls.
+    '''
+    
     if new == True:
         df = aquire_zillow_data(new == True)
     else:
