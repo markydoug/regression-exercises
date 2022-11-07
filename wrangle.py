@@ -74,6 +74,33 @@ def remove_outliers(df, col_list):
         
     return df
 
+def wrangle_zillow_outliers(new = False):
+    ''' 
+    Checks to see if there is a local copy of the data, 
+    if not or if new = True then go get data from Codeup database
+    Then prepares the data by making feature names human readable
+    remove outliers and drop the leftover nulls.
+    '''
+    
+    if new == True:
+        df = aquire_zillow_data(new == True)
+    else:
+        df = aquire_zillow_data()
+        
+    #make column names more human readable
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
+                          'bathroomcnt':'bathrooms', 
+                          'calculatedfinishedsquarefeet':'square_feet',
+                          'taxvaluedollarcnt':'tax_value', 
+                          'yearbuilt':'year_built'})
+    
+    df = remove_outliers(df, ['bedrooms','bathrooms','square_feet', 
+                                   'tax_value', 'taxamount'])
+    
+    df = df.dropna()
+    
+    return df
+
 def wrangle_zillow(new = False):
     ''' 
     Checks to see if there is a local copy of the data, 
@@ -93,9 +120,6 @@ def wrangle_zillow(new = False):
                           'calculatedfinishedsquarefeet':'square_feet',
                           'taxvaluedollarcnt':'tax_value', 
                           'yearbuilt':'year_built'})
-    
-    df = remove_outliers(df, ['bedrooms','bathrooms','square_feet', 
-                                   'tax_value', 'taxamount'])
     
     df = df.dropna()
     
