@@ -54,19 +54,18 @@ def aquire_zillow_data(new = False):
           
     return df
 
-def remove_outliers(df, col_list):
+def remove_outliers(df, k, col_list):
     ''' remove outliers from a list of columns in a dataframe 
         and return that dataframe
     '''
     for col in col_list:
 
-        q1 = df[col].quantile(0.25)
-        q3 = df[col].quantile(0.75)  # get quartiles
+        q1, q3 = df[col].quantile([0.25, 0.75]) # get quartiles
         
         iqr = q3 - q1   # calculate interquartile range
         
-        upper_bound = q3 + 1.5 * iqr   # get upper bound
-        lower_bound = q1 - 1.5 * iqr   # get lower bound
+        upper_bound = q3 + k * iqr   # get upper bound
+        lower_bound = q1 - k * iqr   # get lower bound
 
         # return dataframe without outliers
         
@@ -74,46 +73,20 @@ def remove_outliers(df, col_list):
         
     return df
 
-def wrangle_zillow_outliers(new = False):
-    ''' 
-    Checks to see if there is a local copy of the data, 
-    if not or if new = True then go get data from Codeup database
-    Then prepares the data by making feature names human readable
-    remove outliers and drop the leftover nulls.
-    '''
-    
-    if new == True:
-        df = aquire_zillow_data(new == True)
-    else:
-        df = aquire_zillow_data()
-        
-    #make column names more human readable
-    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
-                          'bathroomcnt':'bathrooms', 
-                          'calculatedfinishedsquarefeet':'square_feet',
-                          'taxvaluedollarcnt':'tax_value', 
-                          'yearbuilt':'year_built'})
-    
-    df = remove_outliers(df, ['bedrooms','bathrooms','square_feet', 
-                                   'tax_value', 'taxamount'])
-    
-    df = df.dropna()
-    
-    return df
 
-def wrangle_zillow(new = False):
+def wrangle_zillow(new = False, remove = True):
     ''' 
     Checks to see if there is a local copy of the data, 
     if not or if new = True then go get data from Codeup database
     Then prepares the data by making feature names human readable
-    and drop the nulls.
+    if remove = True it removes outliers and finally drops the leftover nulls.
     '''
     
     if new == True:
         df = aquire_zillow_data(new == True)
     else:
         df = aquire_zillow_data()
-        
+
     #make column names more human readable
     df = df.rename(columns = {'bedroomcnt':'bedrooms', 
                           'bathroomcnt':'bathrooms', 
@@ -121,6 +94,10 @@ def wrangle_zillow(new = False):
                           'taxvaluedollarcnt':'tax_value', 
                           'yearbuilt':'year_built'})
     
+    if remove == True:
+        df = remove_outliers(df, 1.5, ['bedrooms','bathrooms','square_feet', 
+                                   'tax_value', 'taxamount'])  
+
     df = df.dropna()
     
     return df
