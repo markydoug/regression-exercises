@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from sklearn.model_selection import train_test_split
+import sklearn.preprocessing as pre
 
 import env
 
@@ -54,6 +56,11 @@ def aquire_zillow_data(new = False):
           
     return df
 
+
+###################################################################################
+##################################### CLEAN DATA ##################################
+###################################################################################
+
 def remove_outliers(df, k, col_list):
     ''' remove outliers from a list of columns in a dataframe 
         and return that dataframe
@@ -74,6 +81,26 @@ def remove_outliers(df, k, col_list):
     return df
 
 
+def clean_zillow(df, remove = True):
+    '''Takes in zillow data and returns a clean df'''
+
+    #make column names more human readable
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
+                          'bathroomcnt':'bathrooms', 
+                          'calculatedfinishedsquarefeet':'square_feet',
+                          'taxvaluedollarcnt':'tax_value', 
+                          'yearbuilt':'year_built'})
+    
+    #if remove == True drop outliers
+    if remove == True:
+        df = remove_outliers(df, 1.5, ['bedrooms','bathrooms','square_feet', 
+                                   'tax_value', 'taxamount'])  
+        
+    #drop nulls
+    df = df.dropna()
+    
+    return df
+
 def wrangle_zillow(new = False, remove = True):
     ''' 
     Checks to see if there is a local copy of the data, 
@@ -86,18 +113,45 @@ def wrangle_zillow(new = False, remove = True):
         df = aquire_zillow_data(new == True)
     else:
         df = aquire_zillow_data()
-
-    #make column names more human readable
-    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
-                          'bathroomcnt':'bathrooms', 
-                          'calculatedfinishedsquarefeet':'square_feet',
-                          'taxvaluedollarcnt':'tax_value', 
-                          'yearbuilt':'year_built'})
     
-    if remove == True:
-        df = remove_outliers(df, 1.5, ['bedrooms','bathrooms','square_feet', 
-                                   'tax_value', 'taxamount'])  
-
-    df = df.dropna()
+    df = clean_zillow(df)
     
     return df
+
+def scale_zillow(train, validate, test, scale_features=['bedrooms', 'bathrooms', 'square_feet', 'taxamount']):
+    '''
+    Takes in train, validate, test and a list of features to scale
+    and scales those features.
+    Returns df with new columns with scaled data
+    '''
+    train_scaled = train.copy()
+    validate_scaled = validate.copy()
+    test_scaled = test.copy()
+    
+    quantile = pre.QuantileTransformer(output_distribution='normal')
+    quantile.fit(train[scale_features])
+    
+    train_scaled[scale_features] = pd.DataFrame(quantile.transform(train[scale_features]),
+                                                  columns=train[scale_features].columns.values).set_index([train.index.values])
+                                                  
+    validate_scaled[scale_features] = pd.DataFrame(quantile.transform(validate[scale_features]),
+                                                  columns=validate[scale_features].columns.values).set_index([validate.index.values])
+    
+    test_scaled[scale_features] = pd.DataFrame(quantile.transform(test[scale_features]),
+                                                 columns=test[scale_features].columns.values).set_index([test.index.values])
+    
+    return train_scaled, validate_scaled, test_scaled
+
+###################################################################################
+##################################### SPLIT DATA ##################################
+###################################################################################
+
+def train_validate_test_split(df):
+    '''
+    Takes in a data frame and the target variable column  and returns
+    train (65%), validate (20%), and test (15%) data frames.
+    '''
+    train, test = train_test_split(df,test_size = 0.15, random_state=27)
+    train, validate = train_test_split(train, test_size = 0.235, random_state=27)
+    
+    return train, validate, test
