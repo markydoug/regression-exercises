@@ -114,7 +114,10 @@ def wrangle_zillow(new = False, remove = True):
     else:
         df = aquire_zillow_data()
     
-    df = clean_zillow(df)
+    if remove == False:
+        df = clean_zillow(df, remove = False)
+    else:
+        df = clean_zillow(df)
     
     return df
 
