@@ -145,9 +145,31 @@ def scale_zillow(train, validate, test, scale_features=['bedrooms', 'bathrooms',
     
     return train_scaled, validate_scaled, test_scaled
 
-###################################################################################
-##################################### SPLIT DATA ##################################
-###################################################################################
+###############################################
+################# SPLIT DATA ##################
+###############################################
+
+def split_data_other(df, train_size=0.65, validate_size=0.2):
+    '''
+    Takes in a data frame, the train size and validate size
+    It returns train, validate, and test data frames based on the sizes
+    that were passed.
+    '''
+    train, test = train_test_split(df, train_size = train_size + validate_size , random_state=27)
+    train, validate = train_test_split(train, test_size = validate_size/(train_size + validate_size), random_state=27)
+    
+    return train, validate, test
+
+def split_data(df, test_size=0.15):
+    '''
+    Takes in a data frame and the train size
+    It returns train, validate , and test data frames
+    with validate being 0.05 bigger than test and train has the rest of the data.
+    '''
+    train, test = train_test_split(df, test_size = test_size , random_state=27)
+    train, validate = train_test_split(train, test_size = (test_size + 0.05)/(1-test_size), random_state=27)
+    
+    return train, validate, test
 
 def train_validate_test_split(df):
     '''
