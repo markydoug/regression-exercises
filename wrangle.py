@@ -123,17 +123,16 @@ def clean_zillow(df, remove = True):
 
     #convert data types
     df["year_built"] = df["year_built"].astype(int)
-    df["bedrooms"] = df["bedrooms"].astype(int).astype("category")  
-    df["bathrooms"] = df["bathrooms"].astype(int).astype("category") 
+    df["bedrooms"] = df["bedrooms"].astype(int)  
+    df["bathrooms"] = df["bathrooms"].astype(int) 
     df["square_feet"] = df["square_feet"].astype(int)
 
     # Relabeling fips data
-    df['county'] = df.fips.replace({6037:'LA',
-                       6059:'Orange',
-                       6111:'Ventura'}).astype("category")
-    df = df.drop(columns='fips')
+    df['county'] = df.fips.replace({6037:'LA', 6059:'Orange', 6111:'Ventura'})
+    # Get dummies for fips
+    dummy_df = pd.get_dummies(df[['county']], dummy_na=False, drop_first=[True, True])
+    df = pd.concat([df, dummy_df], axis=1)
 
-    
     #Creating new column for home age using year_built, casting as integer
     df["2017_age"] = 2017 - df.year_built
     df["2017_age"] = df["2017_age"].astype(int)
@@ -147,20 +146,14 @@ def wrangle_zillow(new = False, remove = True):
     Then prepares the data by making feature names human readable
     if remove = True it removes outliers and finally drops the leftover nulls.
     '''
+
+    df = aquire_zillow_data(new = new)
     
-    if new == True:
-        df = aquire_zillow_data(new == True)
-    else:
-        df = aquire_zillow_data()
-    
-    if remove == False:
-        df = clean_zillow(df, remove = False)
-    else:
-        df = clean_zillow(df)
+    df = clean_zillow(df, remove = remove)
     
     return df
 
-def scale_zillow(train, validate, test, scale_features=['bedrooms', 'bathrooms', 'square_feet', 'taxamount']):
+def scale_zillow(train, validate, test, scale_features=['square_feet', 'taxamount']):
     '''
     Takes in train, validate, test and a list of features to scale
     and scales those features.
@@ -218,27 +211,37 @@ def prep_for_model(train, validate, test, target):
     and y (only target variable) for each data frame
     '''
 
-    X_train = train.drop(columns=target)
+    drop_columns = list(train.select_dtypes(exclude=np.number).columns) + [target]
+
+    X_train = train.drop(columns=drop_columns)
     y_train = train[target]
 
-    X_validate = validate.drop(columns=target)
+    X_validate = validate.drop(columns=drop_columns)
     y_validate = validate[target]
 
-    X_test = test.drop(columns=target)
+    X_test = test.drop(columns=drop_columns)
     y_test = test[target]
 
     return X_train, y_train, X_validate, y_validate, X_test, y_test
 
-def prep_df_for_model(df, target):
+def big_zillow_wrangle(target, new = False, remove = True):
     '''
-    Takes in a data frame and the target variable column, splits the data
-    into train, validate, and test  data frames
-    then splits again for X (all variables but target variable) and 
-    y (only target variable) for each data frame
+    Takes in the target variable, if you want new data, and 
+    if you want to remove outliers. 
+    Returns a cleaned zillow dataframe and split dataframe ready for 
+    exploration and modeling
     '''
+    #acquire data
+    mydf = aquire_zillow_data(new = new)
+    #clean data
+    mydf = clean_zillow(mydf, remove = remove)
+    #split data
+    train, validate, test = split_data(mydf)
+    #scale data
+    train_scaled, validate_scaled, test_scaled = scale_zillow(train, validate, test)
+    #prep for model
+    X_train, y_train, X_validate, y_validate, X_test, y_test = prep_for_model(train_scaled, validate_scaled, test_scaled, target)
+    #explore data
+    X_train_exp = train.drop(columns=target)
     
-    train, validate, test = split_data(df)
-
-    X_train, y_train, X_validate, y_validate, X_test, y_test = prep_for_model(train, validate, test, target)
-
-    return X_train, y_train, X_validate, y_validate, X_test, y_test
+    return mydf, X_train_exp, X_train, y_train, X_validate, y_validate, X_test, y_test
