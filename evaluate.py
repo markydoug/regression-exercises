@@ -39,9 +39,9 @@ def baseline_mean_errors(y):
     '''
     baseline = np.repeat(y.mean(), len(y))
     
-    MSE = metric.mean_squared_error(y, baseline)
-    SSE = MSE*len(y)
-    RSME = sqrt(MSE)
+    MSE_baseline = metric.mean_squared_error(y, baseline)
+    SSE_baseline = MSE_baseline*len(y)
+    RMSE_baseline = sqrt(MSE_baseline)
     
     return SSE_baseline, MSE_baseline, RMSE_baseline
 
@@ -56,4 +56,7 @@ def better_than_baseline(y, yhat):
     SSE_baseline, MSE_baseline, RMSE_baseline = baseline_mean_errors(y)
     
     if SSE < SSE_baseline:
-        return True
+        return print(f'SSE: {SSE}\nSSE_baseline: {SSE_baseline}\nThis model performs better than baseline.')
+    else:
+        return print(f'SSE: {SSE}\nSSE_baseline: {SSE_baseline}\nThis model performs worse than baseline.')
+    
