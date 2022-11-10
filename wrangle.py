@@ -8,9 +8,9 @@ import sklearn.preprocessing as pre
 
 import env
 
-###################################################################################
-#################################### ACQUIRE DATA #################################
-###################################################################################
+###################################################
+################## ACQUIRE DATA ###################
+###################################################
 
 def get_db_url(db, user=env.username, password=env.password, host=env.host):
     '''
@@ -57,9 +57,9 @@ def aquire_zillow_data(new = False):
     return df
 
 
-###################################################################################
-##################################### CLEAN DATA ##################################
-###################################################################################
+###################################################
+#################### CLEAN DATA ###################
+###################################################
 
 def remove_outliers(df, k, col_list):
     ''' remove outliers from a list of columns in a dataframe 
@@ -80,6 +80,25 @@ def remove_outliers(df, k, col_list):
         
     return df
 
+def house_size(df, col_list):
+    '''
+    Creates size columns and assigns True or False based on if
+    the features in col_list are above or below the interquartile range
+    '''
+    df['large_home'] = False
+    df['small_home'] = False
+    for col in col_list:
+
+        q1, q3 = df[col].quantile([0.25, 0.75]) # get quartiles
+
+        iqr = q3 - q1   # calculate interquartile range
+
+        upper_bound = q3 + 1.5 * iqr   # get upper bound
+        lower_bound = q1 - 1.5 * iqr   # get lower bound
+
+        df.loc[df[col] > upper_bound, 'large_home'] = True
+        df.loc[df[col] < lower_bound, 'small_home'] = True
+    return df
 
 def clean_zillow(df, remove = True):
     '''Takes in zillow data and returns a clean df'''
@@ -95,10 +114,30 @@ def clean_zillow(df, remove = True):
     if remove == True:
         df = remove_outliers(df, 1.5, ['bedrooms','bathrooms','square_feet', 
                                    'tax_value', 'taxamount'])  
-        
+    #else add house size
+    else:
+        df = house_size(df, ['bedrooms','bathrooms','square_feet'])
+   
     #drop nulls
     df = df.dropna()
+
+    #convert data types
+    df["fips"] = df["fips"].astype(int).astype("category")
+    df["year_built"] = df["year_built"].astype(int)
+    df["bedrooms"] = df["bedrooms"].astype(int).astype("category")  
+    df["bathrooms"] = df["bathrooms"].astype(int).astype("category") 
+    df["square_feet"] = df["square_feet"].astype(int)
+
+    # Relabeling fips data
+    df['county'] = df.fips.replace({6037:'LA',
+                       6059:'Orange',
+                       6111:'Ventura'})
+    df = df.drop(columns='fips')
     
+    #Creating new column for home age using year_built, casting as integer
+    df["2017_age"] = 2017 - df.year_built
+    df["2017_age"] = df["2017_age"].astype(int)
+
     return df
 
 def wrangle_zillow(new = False, remove = True):
@@ -171,12 +210,35 @@ def split_data(df, test_size=0.15):
     
     return train, validate, test
 
-def train_validate_test_split(df):
+
+def prep_for_model(train, validate, test, target):
     '''
-    Takes in a data frame and the target variable column  and returns
-    train (65%), validate (20%), and test (15%) data frames.
+    Takes in train, validate, and test data frames
+    then splits  for X (all variables but target variable) 
+    and y (only target variable) for each data frame
     '''
-    train, test = train_test_split(df,test_size = 0.15, random_state=27)
-    train, validate = train_test_split(train, test_size = 0.235, random_state=27)
+
+    X_train = train.drop(columns=target)
+    y_train = train[target]
+
+    X_validate = validate.drop(columns=target)
+    y_validate = validate[target]
+
+    X_test = test.drop(columns=target)
+    y_test = test[target]
+
+    return X_train, y_train, X_validate, y_validate, X_test, y_test
+
+def prep_df_for_model(df, target):
+    '''
+    Takes in a data frame and the target variable column, splits the data
+    into train, validate, and test  data frames
+    then splits again for X (all variables but target variable) and 
+    y (only target variable) for each data frame
+    '''
     
-    return train, validate, test
+    train, validate, test = split_data(df)
+
+    X_train, y_train, X_validate, y_validate, X_test, y_test = prep_for_model(train, validate, test, target)
+
+    return X_train, y_train, X_validate, y_validate, X_test, y_test
