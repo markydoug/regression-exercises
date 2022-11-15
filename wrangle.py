@@ -26,7 +26,7 @@ def new_zillow_data():
     '''
     # Create SQL query.
     sql_query = '''
-                SELECT bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, taxamount, fips
+                SELECT bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, fips
                 FROM properties_2017
                 WHERE propertylandusetypeid = 261;
                 '''
@@ -153,7 +153,7 @@ def wrangle_zillow(new = False, remove = True):
     
     return df
 
-def scale_zillow(train, validate, test, scale_features=['square_feet', 'taxamount']):
+def scale_zillow(train, validate, test, scale_features=[' square_feet']):
     '''
     Takes in train, validate, test and a list of features to scale
     and scales those features.
